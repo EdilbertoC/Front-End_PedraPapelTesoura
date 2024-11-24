@@ -1,0 +1,1 @@
+Para abrir o servidor extraia a pasta "JANKENPON" para outro lugar fora da pasta "8 – JOGO JANKENPON (PEDRA, PAPEL E TESOURA)" para evitar conflito no nome do diretório.

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pedra, Papel e Tesoura</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        #choices {
+            display: flex;
+            gap: 10px;
+        }
+        .button {
+            padding: 10px 20px;
+            font-size: 18px;
+            cursor: pointer;
+            border: 2px solid #555;
+            background-color: #fff;
+            border-radius: 5px;
+        }
+        .button:hover {
+            background-color: #ddd;
+        }
+        #status {
+            margin: 20px 0;
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Pedra, Papel e Tesoura</h1>
+    <div id="choices">
+        <button class="button" onclick="play('Pedra')">Pedra</button>
+        <button class="button" onclick="play('Papel')">Papel</button>
+        <button class="button" onclick="play('Tesoura')">Tesoura</button>
+    </div>
+    <div id="status">Aguardando oponente...</div>
+    <button class="button" onclick="resetGame()">Reiniciar Jogo</button>
+    <script>
+        const ws = new WebSocket('ws://localhost:8080');
+        let playerChoice = null;
+        let opponentChoice = null;
+        let playerScore = 0;
+        let opponentScore = 0;
+
+        function play(choice) {
+            if (playerChoice || opponentChoice) {
+                alert("Aguarde o resultado antes de jogar novamente.");
+                return;
+            }
+            playerChoice = choice;
+            updateStatus("Você escolheu " + choice + ". Aguardando oponente...");
+            ws.send(JSON.stringify({ type: 'choice', choice }));
+        }
+
+        function resetGame() {
+            playerChoice = null;
+            opponentChoice = null;
+            updateStatus("Aguardando oponente...");
+            ws.send(JSON.stringify({ type: 'reset' }));
+        }
+
+        function updateStatus(message) {
+            document.getElementById('status').textContent = message;
+        }
+
+        function determineWinner() {
+            if (!playerChoice || !opponentChoice) return;
+
+            let result;
+            if (playerChoice === opponentChoice) {
+                result = "Empate!";
+            } else if (
+                (playerChoice === 'Pedra' && opponentChoice === 'Tesoura') ||
+                (playerChoice === 'Tesoura' && opponentChoice === 'Papel') ||
+                (playerChoice === 'Papel' && opponentChoice === 'Pedra')
+            ) {
+                result = "Você ganhou!";
+                playerScore++;
+            } else {
+                result = "Você perdeu!";
+                opponentScore++;
+            }
+
+            updateStatus(
+                `Você escolheu ${playerChoice}, o oponente escolheu ${opponentChoice}. ${result} 
+                 Placar: Você ${playerScore} x ${opponentScore} Oponente.`
+            );
+
+            playerChoice = null;
+            opponentChoice = null;
+        }
+
+        ws.onmessage = (message) => {
+            const data = JSON.parse(message.data);
+
+            if (data.type === 'choice') {
+                if (!opponentChoice) {
+                    opponentChoice = data.choice;
+                    determineWinner();
+                }
+            }
+
+            if (data.type === 'reset') {
+                playerChoice = null;
+                opponentChoice = null;
+                updateStatus("Aguardando oponente...");
+            }
+        };
+    </script>
+</body>
+</html>
